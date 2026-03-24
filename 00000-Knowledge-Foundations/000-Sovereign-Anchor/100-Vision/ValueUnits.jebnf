@@ -1,0 +1,23 @@
+# Value Units Schema for Sovereign Monetization
+ValueUnits {
+    "RepositoryBackupUnit" {
+        "Description" = "Successful RAM-piped backup of a unique repository hash tree node.";
+        "ValueType" = "StorageSovereignty";
+        "AuditMetric" = "HashVerification";
+    }
+    "RecoveryVerificationUnit" {
+        "Description" = "Successful sub-second rehydration simulation with verified integrity.";
+        "ValueType" = "AvailabilityAssurance";
+        "AuditMetric" = "RecoveryLatencyMS";
+    }
+    "AssuranceReportUnit" {
+        "Description" = "Generation of a human-verifiable jeBNF assurance report for compliance auditing.";
+        "ValueType" = "ComplianceEvidence";
+        "AuditMetric" = "GrammarValidationPass";
+    }
+    "DeduplicationSavingsUnit" {
+        "Description" = "Identification and elimination of redundant data blocks across the organization.";
+        "ValueType" = "EfficiencyGain";
+        "AuditMetric" = "ByteSavingsRatio";
+    }
+}

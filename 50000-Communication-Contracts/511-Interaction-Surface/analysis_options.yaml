@@ -1,0 +1,6 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    avoid_web_libraries_in_flutter: true
+    use_build_context_synchronously: false
