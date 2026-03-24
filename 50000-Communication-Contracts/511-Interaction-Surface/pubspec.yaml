@@ -1,0 +1,26 @@
+name: olympus_fleet_git_sovereign
+description: Project GitSovereign - The Firehorse Interaction Surface.
+version: 0.1.0
+
+environment:
+  sdk: ">=3.41.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Sovereign Federated Interface dependencies
+  provider: ^6.1.2
+  web: ^1.1.0 # Required for WasmGC/dart:js_interop
+  firebase_auth: ^5.4.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  # Web target for WasmGC
+  platforms:
+    web:
+      default_compiler: wasm
