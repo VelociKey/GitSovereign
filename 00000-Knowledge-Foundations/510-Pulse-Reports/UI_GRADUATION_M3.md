@@ -11,7 +11,7 @@ This document chronicles the visual evolution of the GitSovereign Interaction Su
 - **Secondary:** Cyber Lime
 - **Tertiary:** Obsidian
 
-![Stage 1: Solo Founder](/C:\Users\josep\.gemini\antigravity\brain\9fd0fbd1-02cf-4971-9425-e24169a5adbe\gitsovereign_ui_stage1_solo_1774399422923.png)
+![Stage 1: Solo Founder](images/solo.png)
 
 ---
 
@@ -21,7 +21,7 @@ This document chronicles the visual evolution of the GitSovereign Interaction Su
 - **Secondary:** Steel Gray
 - **Tertiary:** Forest Green
 
-![Stage 2: Small Team](/C:\Users\josep\.gemini\antigravity\brain\9fd0fbd1-02cf-4971-9425-e24169a5adbe\gitsovereign_ui_stage2_team_1774399438236.png)
+![Stage 2: Small Team](images/team.png)
 
 ---
 
@@ -31,7 +31,7 @@ This document chronicles the visual evolution of the GitSovereign Interaction Su
 - **Secondary:** Platinum
 - **Tertiary:** Deep Umber
 
-![Stage 3: Seed Stage](/C:\Users\josep\.gemini\antigravity\brain\9fd0fbd1-02cf-4971-9425-e24169a5adbe\gitsovereign_ui_stage3_seed_1774399456927.png)
+![Stage 3: Seed Stage](images/seed.png)
 
 ---
 
@@ -41,7 +41,7 @@ This document chronicles the visual evolution of the GitSovereign Interaction Su
 - **Secondary:** Burnished Gold
 - **Tertiary:** Antique Bone
 
-![Stage 4: Beyond](/C:\Users\josep\.gemini\antigravity\brain\9fd0fbd1-02cf-4971-9425-e24169a5adbe\gitsovereign_ui_stage4_beyond_1774399471024.png)
+![Stage 4: Beyond](images/beyond.png)
 
 ---
 
@@ -51,7 +51,7 @@ This document chronicles the visual evolution of the GitSovereign Interaction Su
 - **Secondary:** Energetic Orange
 - **Tertiary:** Pure White
 
-![Stage 5: White Label](/C:\Users\josep\.gemini\antigravity\brain\9fd0fbd1-02cf-4971-9425-e24169a5adbe\gitsovereign_ui_stage5_whitelabel_1774399638333.png)
+![Stage 5: White Label](images/whitelabel.png)
 
 ---
 
