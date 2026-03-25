@@ -1,14 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
+import 'theme/institutional_tier.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => TelemetryProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TelemetryProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
       child: const GitSovereignApp(),
     ),
   );
+}
+
+class ThemeProvider extends ChangeNotifier {
+  InstitutionalTier _tier = InstitutionalTier.seed;
+  InstitutionalTier get tier => _tier;
+
+  void updateTier(InstitutionalTier newTier) {
+    _tier = newTier;
+    notifyListeners();
+  }
+
+  ThemeData get themeData {
+    final palette = MaturityPalette.registry[_tier]!;
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: palette.primarySeed,
+        primary: palette.primarySeed,
+        secondary: palette.secondarySeed,
+        tertiary: palette.tertiarySeed,
+        brightness: Brightness.dark,
+      ),
+      scaffoldBackgroundColor: const Color(0xFF0A0A0A),
+      navigationRailTheme: const NavigationRailThemeData(
+        backgroundColor: Color(0xFF0A0A0A),
+        indicatorColor: Colors.transparent,
+        selectedIconTheme: IconThemeData(color: null), // Will use primary
+        unselectedIconTheme: IconThemeData(color: Colors.grey),
+      ),
+    );
+  }
 }
 
 class GitSovereignApp extends StatelessWidget {
@@ -16,15 +51,11 @@ class GitSovereignApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return MaterialApp(
       title: 'GitSovereign Firehorse HUD',
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0A0A0A),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00FF41), // Matrix Green
-          secondary: Color(0xFF00A3FF),
-        ),
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: themeProvider.themeData,
       home: const HUDLayout(),
     );
   }
@@ -44,7 +75,7 @@ class HUDLayout extends StatefulWidget {
   const HUDLayout({super.key});
 
   @override
-  State<HUDLayout> createState() => _HUDLayoutState();
+  State<HUDLayout> createState() => _HUDLayoutState();      
 }
 
 class _HUDLayoutState extends State<HUDLayout> {
@@ -52,6 +83,8 @@ class _HUDLayoutState extends State<HUDLayout> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: Row(
         children: [
@@ -63,15 +96,19 @@ class _HUDLayoutState extends State<HUDLayout> {
               });
             },
             labelType: NavigationRailLabelType.all,
+            selectedIconTheme: IconThemeData(color: colorScheme.primary),
+            unselectedIconTheme: const IconThemeData(color: Colors.white54),
+            selectedLabelTextStyle: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold),
+            unselectedLabelTextStyle: const TextStyle(color: Colors.white54),
             destinations: const [
               NavigationRailDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                selectedIcon: Icon(Icons.dashboard),
+                icon: Icon(Icons.dashboard_outlined),       
+                selectedIcon: Icon(Icons.dashboard),        
                 label: Text('Dashboard'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.file_download_outlined),
-                selectedIcon: Icon(Icons.file_download),
+                icon: Icon(Icons.file_download_outlined),   
+                selectedIcon: Icon(Icons.file_download),    
                 label: Text('Harvests'),
               ),
               NavigationRailDestination(
@@ -81,7 +118,7 @@ class _HUDLayoutState extends State<HUDLayout> {
               ),
             ],
           ),
-          const VerticalDivider(thickness: 1, width: 1),
+          VerticalDivider(thickness: 1, width: 1, color: colorScheme.outlineVariant),    
           Expanded(
             child: _buildView(_selectedIndex),
           ),
@@ -107,14 +144,28 @@ class DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,       
         children: [
-          const Text(
-            'FIREHORSE TELEMETRY HEARTBEAT',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 2),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'FIREHORSE TELEMETRY HEARTBEAT',
+                style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.bold, 
+                  letterSpacing: 2,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              _buildTierSelector(context, themeProvider),
+            ],
           ),
           const SizedBox(height: 24),
           const Expanded(
@@ -126,9 +177,9 @@ class DashboardView extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStatCard('EGRESS STATUS', 'STABLE', Colors.green),
-              _buildStatCard('ACTIVE PIPES', '4', Colors.blue),
-              _buildStatCard('LATENCY', '42ms', Colors.orange),
+              _buildStatCard(context, 'EGRESS STATUS', 'STABLE', colorScheme.primary),
+              _buildStatCard(context, 'ACTIVE PIPES', '4', colorScheme.secondary),
+              _buildStatCard(context, 'LATENCY', '42ms', colorScheme.tertiary),
             ],
           ),
         ],
@@ -136,18 +187,47 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String label, String value, Color color) {
+  Widget _buildTierSelector(BuildContext context, ThemeProvider themeProvider) {
+    return DropdownButton<InstitutionalTier>(
+      value: themeProvider.tier,
+      dropdownColor: const Color(0xFF1A1A1A),
+      style: TextStyle(color: Theme.of(context).colorScheme.primary),
+      underline: Container(
+        height: 2,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+      onChanged: (InstitutionalTier? newValue) {
+        if (newValue != null) {
+          themeProvider.updateTier(newValue);
+        }
+      },
+      items: InstitutionalTier.values.map<DropdownMenuItem<InstitutionalTier>>((InstitutionalTier value) {
+        return DropdownMenuItem<InstitutionalTier>(
+          value: value,
+          child: Text(value.name.toUpperCase()),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildStatCard(BuildContext context, String label, String value, Color color) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: color.withOpacity(0.5)),
-        borderRadius: BorderRadius.circular(8),
+        color: color.withOpacity(0.05),
+        border: Border.all(color: color.withOpacity(0.5)),  
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
-          Text(label, style: TextStyle(color: color, fontSize: 12)),
+          Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(value, style: TextStyle(
+            fontSize: 20, 
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          )),
         ],
       ),
     );
@@ -159,6 +239,7 @@ class SovereignTreeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final repos = [
       {'name': 'OlympusForge', 'status': 'Sovereign', 'hash': 'a1b2...'},
       {'name': 'OlympusConductor', 'status': 'Syncing', 'hash': 'c3d4...'},
@@ -170,16 +251,28 @@ class SovereignTreeView extends StatelessWidget {
       itemBuilder: (context, index) {
         final repo = repos[index];
         return ListTile(
-          leading: const Icon(Icons.folder_copy_outlined),
-          title: Text(repo['name']!),
-          subtitle: Text('Hash: ${repo['hash']}'),
+          leading: Icon(Icons.folder_copy_outlined, color: colorScheme.primary),  
+          title: Text(repo['name']!, style: TextStyle(color: colorScheme.onSurface)),
+          subtitle: Text('Hash: ${repo['hash']}', style: TextStyle(color: colorScheme.onSurfaceVariant)),
           trailing: Chip(
-            label: Text(repo['status']!),
-            backgroundColor: repo['status'] == 'Sovereign' ? Colors.green.withOpacity(0.2) : Colors.blue.withOpacity(0.2),
+            label: Text(repo['status']!, style: TextStyle(color: _getStatusColor(repo['status']!, colorScheme))),
+            backgroundColor: _getStatusColor(repo['status']!, colorScheme).withOpacity(0.1),
+            side: BorderSide(color: _getStatusColor(repo['status']!, colorScheme).withOpacity(0.5)),
           ),
         );
       },
     );
+  }
+
+  Color _getStatusColor(String status, ColorScheme colorScheme) {
+    switch (status) {
+      case 'Sovereign':
+        return colorScheme.primary;
+      case 'Syncing':
+        return colorScheme.secondary;
+      default:
+        return colorScheme.tertiary;
+    }
   }
 }
 
@@ -210,6 +303,7 @@ class _HeartbeatVisualizerState extends State<HeartbeatVisualizer> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -217,7 +311,8 @@ class _HeartbeatVisualizerState extends State<HeartbeatVisualizer> with SingleTi
           size: const Size(double.infinity, 200),
           painter: SineWavePainter(
             progress: _controller.value,
-            color: Theme.of(context).colorScheme.primary,
+            color: colorScheme.primary,   
+            glowColor: colorScheme.primaryContainer,
           ),
         );
       },
@@ -228,23 +323,22 @@ class _HeartbeatVisualizerState extends State<HeartbeatVisualizer> with SingleTi
 class SineWavePainter extends CustomPainter {
   final double progress;
   final Color color;
+  final Color glowColor;
 
-  SineWavePainter({required this.progress, required this.color});
+  SineWavePainter({required this.progress, required this.color, required this.glowColor});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
+      ..strokeWidth = 3.0;
 
     final path = Path();
     final centerY = size.height / 2;
-    
+
     for (double x = 0; x <= size.width; x++) {
-      // Sine wave formula: y = A * sin(B(x + C)) + D
-      // progress makes it move
-      final y = centerY + 40 * math.sin((x / size.width * 4 * math.pi) + (progress * 2 * math.pi));
+      final y = centerY + 60 * math.sin((x / size.width * 4 * math.pi) + (progress * 2 * math.pi));
       if (x == 0) {
         path.moveTo(x, y);
       } else {
@@ -252,15 +346,15 @@ class SineWavePainter extends CustomPainter {
       }
     }
 
-    canvas.drawPath(path, paint);
-    
     // Add glowing pulse effect
     final glowPaint = Paint()
-      ..color = color.withOpacity(0.3)
+      ..color = glowColor.withOpacity(0.5)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6.0
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      ..strokeWidth = 10.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     canvas.drawPath(path, glowPaint);
+
+    canvas.drawPath(path, paint);
   }
 
   @override
