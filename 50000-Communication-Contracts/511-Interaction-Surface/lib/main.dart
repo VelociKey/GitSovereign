@@ -4,7 +4,7 @@ import 'dart:math' as math;
 // WASM-GC Compliance
 import 'dart:js_interop'; 
 import 'package:web/web.dart' as web;
-import 'theme/institutional_tier.dart';
+import 'theme/maturity_tier.dart';
 
 void main() {
   runApp(
