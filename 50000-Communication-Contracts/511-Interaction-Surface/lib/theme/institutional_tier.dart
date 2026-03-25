@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum InstitutionalTier {
+enum MaturityTier {
   solo,
   team,
   seed,
@@ -19,29 +19,29 @@ class MaturityPalette {
     required this.tertiarySeed,
   });
 
-  static const Map<InstitutionalTier, MaturityPalette> registry = {
-    InstitutionalTier.solo: MaturityPalette(
+  static const Map<MaturityTier, MaturityPalette> registry = {
+    MaturityTier.solo: MaturityPalette(
       primarySeed: Color(0xFF00FF41), // Matrix Green
       secondarySeed: Color(0xFF000000),
       tertiarySeed: Color(0xFF003300),
     ),
-    InstitutionalTier.team: MaturityPalette(
+    MaturityTier.team: MaturityPalette(
       primarySeed: Color(0xFF00A3FF), // Sky Blue
       secondarySeed: Color(0xFFFFFFFF),
       tertiarySeed: Color(0xFF002244),
     ),
-    InstitutionalTier.seed: MaturityPalette(
-      primarySeed: Color(0xFF001F3F), // Imperial Navy
+    MaturityTier.seed: MaturityPalette(
+      primarySeed: Color(0xFF1A237E), // Imperial Navy (M3 Compliant)
       secondarySeed: Color(0xFFE5E4E2), // Platinum
-      tertiarySeed: Color(0xFF3D2B1F), // Deep Umber
+      tertiarySeed: Color(0xFF5D4037), // Deep Umber (M3 Compliant)
     ),
-    InstitutionalTier.beyond: MaturityPalette(
+    MaturityTier.beyond: MaturityPalette(
       primarySeed: Color(0xFFFFD700), // Gold
       secondarySeed: Color(0xFF000000),
       tertiarySeed: Color(0xFF331100),
     ),
-    InstitutionalTier.whiteLabel: MaturityPalette(
-      primarySeed: Color(0xFFFFFFFF), // Custom Injection
+    MaturityTier.whiteLabel: MaturityPalette(
+      primarySeed: Color(0xFFFFFFFF), // Custom Injection Slot
       secondarySeed: Color(0xFF000000),
       tertiarySeed: Color(0xFF808080),
     ),

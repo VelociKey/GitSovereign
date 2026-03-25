@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
+// WASM-GC Compliance
+import 'dart:js_interop'; 
+import 'package:web/web.dart' as web;
 import 'theme/institutional_tier.dart';
 
 void main() {
@@ -16,10 +19,10 @@ void main() {
 }
 
 class ThemeProvider extends ChangeNotifier {
-  InstitutionalTier _tier = InstitutionalTier.seed;
-  InstitutionalTier get tier => _tier;
+  MaturityTier _tier = MaturityTier.seed;
+  MaturityTier get tier => _tier;
 
-  void updateTier(InstitutionalTier newTier) {
+  void updateTier(MaturityTier newTier) {
     _tier = newTier;
     notifyListeners();
   }
@@ -39,7 +42,7 @@ class ThemeProvider extends ChangeNotifier {
       navigationRailTheme: const NavigationRailThemeData(
         backgroundColor: Color(0xFF0A0A0A),
         indicatorColor: Colors.transparent,
-        selectedIconTheme: IconThemeData(color: null), // Will use primary
+        selectedIconTheme: IconThemeData(color: null), 
         unselectedIconTheme: IconThemeData(color: Colors.grey),
       ),
     );
@@ -188,7 +191,7 @@ class DashboardView extends StatelessWidget {
   }
 
   Widget _buildTierSelector(BuildContext context, ThemeProvider themeProvider) {
-    return DropdownButton<InstitutionalTier>(
+    return DropdownButton<MaturityTier>(
       value: themeProvider.tier,
       dropdownColor: const Color(0xFF1A1A1A),
       style: TextStyle(color: Theme.of(context).colorScheme.primary),
@@ -196,13 +199,13 @@ class DashboardView extends StatelessWidget {
         height: 2,
         color: Theme.of(context).colorScheme.primary,
       ),
-      onChanged: (InstitutionalTier? newValue) {
+      onChanged: (MaturityTier? newValue) {
         if (newValue != null) {
           themeProvider.updateTier(newValue);
         }
       },
-      items: InstitutionalTier.values.map<DropdownMenuItem<InstitutionalTier>>((InstitutionalTier value) {
-        return DropdownMenuItem<InstitutionalTier>(
+      items: MaturityTier.values.map<DropdownMenuItem<MaturityTier>>((MaturityTier value) {
+        return DropdownMenuItem<MaturityTier>(
           value: value,
           child: Text(value.name.toUpperCase()),
         );
@@ -346,7 +349,6 @@ class SineWavePainter extends CustomPainter {
       }
     }
 
-    // Add glowing pulse effect
     final glowPaint = Paint()
       ..color = glowColor.withOpacity(0.5)
       ..style = PaintingStyle.stroke
