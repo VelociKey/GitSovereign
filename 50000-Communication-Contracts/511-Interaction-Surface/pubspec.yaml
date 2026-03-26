@@ -3,7 +3,7 @@ description: Project GitSovereign - The Firehorse Interaction Surface.
 version: 0.1.0
 
 environment:
-  sdk: ">=3.41.0 <4.0.0"
+  sdk: ">=3.11.3 <4.0.0"
 
 dependencies:
   flutter:
@@ -11,7 +11,7 @@ dependencies:
   # Sovereign Federated Interface dependencies
   provider: ^6.1.2
   web: ^1.1.0 # Required for WasmGC/dart:js_interop
-  firebase_auth: ^5.4.1
+  vector_math: 2.2.0
 
 dev_dependencies:
   flutter_test:
@@ -20,7 +20,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # Web target for WasmGC
-  platforms:
-    web:
-      default_compiler: wasm
