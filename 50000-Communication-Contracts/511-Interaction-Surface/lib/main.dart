@@ -7,11 +7,22 @@ import 'package:web/web.dart' as web;
 import 'theme/maturity_tier.dart';
 
 void main() {
+  // Read query parameter 'tier' for deterministic graduation capture
+  final search = web.window.location.search;
+  final params = Uri.parse(search).queryParameters;
+  final tierParam = params['tier']?.toLowerCase();
+  
+  MaturityTier initialTier = MaturityTier.solo;
+  if (tierParam == 'team') initialTier = MaturityTier.team;
+  if (tierParam == 'seed') initialTier = MaturityTier.seed;
+  if (tierParam == 'beyond') initialTier = MaturityTier.beyond;
+  if (tierParam == 'whitelabel') initialTier = MaturityTier.whiteLabel;
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TelemetryProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider(initialTier: initialTier)),
       ],
       child: const GitSovereignApp(),
     ),
@@ -19,7 +30,9 @@ void main() {
 }
 
 class ThemeProvider extends ChangeNotifier {
-  MaturityTier _tier = MaturityTier.seed;
+  MaturityTier _tier;
+  ThemeProvider({MaturityTier initialTier = MaturityTier.solo}) : _tier = initialTier;
+  
   MaturityTier get tier => _tier;
 
   void updateTier(MaturityTier newTier) {
