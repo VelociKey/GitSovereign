@@ -1,0 +1,17 @@
+# GitSovereign — Central Workspace Harness
+# Pulse 1: Centralized Process Alignment
+
+load("//00SDLC/OlympusBuilder:defs.bzl", "sovereign_vertical_slice")
+
+sovereign_vertical_slice(
+    name = "gitsovereign",
+    org = "VelociKey",
+    backend_srcs = [
+        "//60PROX/GitSovereign/60000-Information-Storage/610-SmartPipe/900-Execution-Points/harvester:harvester_lib",
+    ],
+    bridge_srcs = [
+        "//60PROX/GitSovereign/60000-Information-Storage/610-SmartPipe/900-Execution-Points/bridge:bridge_lib",
+    ],
+    frontend_dir = "//60PROX/GitSovereign/50000-Communication-Contracts/511-Interaction-Surface",
+    frontend_srcs = ["//60PROX/GitSovereign/50000-Communication-Contracts/511-Interaction-Surface:srcs"],
+)

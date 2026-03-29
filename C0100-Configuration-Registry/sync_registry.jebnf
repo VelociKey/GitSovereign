@@ -1,0 +1,7 @@
+::Olympus::Firehorse::SyncRegistry::v1 {
+    DefaultFrequency = "WEEKLY";
+    Schedules = [
+        { Target = "VelociKey"; Frequency = "DAILY"; },
+        { Target = "The-North-Potomac-Initiative/Blueprint"; Frequency = "DAILY"; }
+    ];
+}

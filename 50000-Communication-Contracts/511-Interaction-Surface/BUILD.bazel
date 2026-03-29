@@ -1,0 +1,8 @@
+# GitSovereign UI — Sovereign Access Permit
+# This allows the 900-Forge harness to reach in and build the source where it lives.
+
+filegroup(
+    name = "srcs",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
+)

@@ -9,6 +9,53 @@ import (
 	"time"
 )
 
+// SyncSchedule defines the frequency for a target
+type SyncSchedule struct {
+	Target    string
+	Frequency string // DAILY, WEEKLY
+}
+
+// SyncRegistry holds the global scheduling configuration
+type SyncRegistry struct {
+	DefaultFrequency string
+	Schedules        []SyncSchedule
+}
+
+func LoadSyncRegistry() *SyncRegistry {
+	return &SyncRegistry{
+		DefaultFrequency: "WEEKLY",
+		Schedules: []SyncSchedule{
+			{Target: "VelociKey", Frequency: "DAILY"},
+			{Target: "The-North-Potomac-Initiative/Blueprint", Frequency: "DAILY"},
+		},
+	}
+}
+
+func IsSyncDue(ctx context.Context, target StorageTarget, reg *SyncRegistry, org, repo string) bool {
+	freq := reg.DefaultFrequency
+	for _, s := range reg.Schedules {
+		if s.Target == org || s.Target == org+"/"+repo {
+			freq = s.Frequency
+		}
+	}
+
+	lastSync, err := target.GetManifestMetadata(ctx, org, repo)
+	if err != nil {
+		return true // New or missing manifest
+	}
+
+	threshold := 7 * 24 * time.Hour // WEEKLY
+	if freq == "DAILY" {
+		threshold = 24 * time.Hour
+	}
+
+	due := time.Since(lastSync) > threshold
+	if !due {
+		slog.Info("sync-skipped-not-due", "repo", repo, "last_sync", lastSync.Format(time.RFC3339), "freq", freq)
+	}
+	return due
+}
+
 func main() {
 	// 1. Setup Structured Logging
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
@@ -35,95 +82,181 @@ func main() {
 
 	identity := NewIdentityService(*workstation)
 	cp := NewControlPlane(ctx, *workers, identity)
+	
+	// Pulse 6: Set real CAS storage destination
+	gdriveFolder := "1cajjaUMTzSRZn0__GjsFGcgqr20le4-B"
+	cp.Destination = NewGoogleDriveCAS(gdriveFolder)
+	
 	defer cp.Shutdown()
 	
 	dedup := NewHashTree()
-	storage := &LocalArchive{RootPath: "./archive"}
+
+	gh := NewGitHubClient()
 
 	// 4. Execution Mode
 	switch *mode {
-	case "harvest":
-		if *org == "" {
-			slog.Error("harvest-failed-missing-org")
+	case "list-orgs":
+		orgs, err := gh.ListOrganizations()
+		if err != nil {
+			slog.Error("list-orgs-failed", "err", err)
 			os.Exit(1)
 		}
-		
-		startTime := time.Now()
-		
-		// Pulse 5: High-Frequency Deduplication Simulation (100 Repos)
-		slog.Info("harvest-discovery-start-hfd", "org", *org, "simulated_repos", 100)
-		
-		harvestedCount := 0
-		simulatedRepoSize := uint64(50 * 1024 * 1024) // 50MB per repo
+		fmt.Printf("\nOrganizations for Authenticated User:\n")
+		fmt.Printf("-------------------------------------\n")
+		for _, o := range orgs {
+			fmt.Printf("- %s (ID: %d)\n", o.Login, o.ID)
+		}
+		fmt.Printf("-------------------------------------\n")
 
-		for i := 0; i < 100; i++ {
-			repoID := fmt.Sprintf("Repo-%03d", i)
-			headHash := "static-hash-v1"
-			
-			// Pulse 5: Only 10% are novel (simulating repo 0-9)
-			if i >= 10 {
-				headHash = "static-hash-v1"
-			} else {
-				headHash = fmt.Sprintf("novel-hash-%d", i)
+	case "list-repos":
+		if *org == "" {
+			slog.Error("list-repos-failed-missing-org")
+			os.Exit(1)
+		}
+		repos, err := gh.ListRepositories(*org)
+		if err != nil {
+			slog.Error("list-repos-failed", "org", *org, "err", err)
+			os.Exit(1)
+		}
+		fmt.Printf("\nRepositories in Organization: %s\n", *org)
+		fmt.Printf("-------------------------------------\n")
+		for _, r := range repos {
+			fmt.Printf("- %-30s | Head: %s\n", r.Name, r.HeadHash)
+		}
+		fmt.Printf("-------------------------------------\n")
+
+	case "harvest":
+		var orgsToHarvest []string
+		if *org != "" {
+			orgsToHarvest = append(orgsToHarvest, *org)
+		} else {
+			slog.Info("harvest-all-organizations-start")
+			orgList, err := gh.ListOrganizations()
+			if err != nil {
+				slog.Error("harvest-all-orgs-list-failed", "err", err)
+				os.Exit(1)
+			}
+			for _, o := range orgList {
+				orgsToHarvest = append(orgsToHarvest, o.Login)
 			}
 
-			// 1. O(1) Local Dedupe Check (Org-wide hash node)
-			if !dedup.IsNovel(headHash) {
-				slog.Info("hfd-deduplication-hit", "repo", repoID, "hash", headHash)
-				dedup.Record(headHash, simulatedRepoSize) // Track saved bytes
-				continue
+			// Pulse 6: Update Root Semantic Tree
+			if cp.Destination != nil {
+				cp.Destination.UpdateRootManifest(ctx, orgsToHarvest)
 			}
-
-			// 2. Unique Hash Node Verification (Storage Check)
-			exists, _ := storage.Exists(ctx, repoID, headHash)
-			if exists {
-				slog.Info("hfd-storage-hit", "repo", repoID, "hash", headHash)
-				dedup.Record(headHash, simulatedRepoSize)
-				continue
-			}
-
-			task := Task{
-				RepoID:    repoID,
-				RepoName:  repoID,
-				Action:    "harvest",
-				Target:    "local",
-				AuthToken: "valid-token-fleet-admin",
-			}
-			
-			if err := cp.Dispatch(task); err != nil {
-				slog.Error("dispatch-failed", "task", repoID, "err", err)
-				continue
-			}
-			
-			dedup.Record(headHash, 0) // It's novel, no bytes saved yet
-			harvestedCount++
 		}
 
-		// Wait for completions
-		received := 0
-		for received < harvestedCount {
-			select {
-			case <-cp.Results():
-				received++
-			case <-time.After(30 * time.Second):
-				slog.Error("harvest-timeout-hfd")
-				return
+		startTime := time.Now()
+		totalNovelHarvested := 0
+		reg := LoadSyncRegistry()
+
+		for _, currentOrg := range orgsToHarvest {
+			slog.Info("harvest-organization-processing", "org", currentOrg)
+
+			// Discover real repositories
+			repos, err := gh.ListRepositories(currentOrg)
+			if err != nil {
+				slog.Error("harvest-discovery-failed", "org", currentOrg, "err", err)
+				continue
 			}
+
+			// Pulse 6: Update Organization Semantic Tree
+			if cp.Destination != nil {
+				var repoNames []string
+				for _, r := range repos { repoNames = append(repoNames, r.Name) }
+				cp.Destination.UpdateOrgManifest(ctx, currentOrg, repoNames)
+			}
+
+			harvestedCount := 0
+			skippedCount := 0
+			simulatedRepoSize := uint64(50 * 1024 * 1024) // 50MB per repo
+
+			for _, r := range repos {
+				repoID := r.Name
+				headHash := r.HeadHash
+
+				// Pulse 6: Check scheduling
+				if cp.Destination != nil && !IsSyncDue(ctx, cp.Destination, reg, currentOrg, repoID) {
+					skippedCount++
+					continue
+				}
+
+				if r.SovereignState != "ACTIVE" {
+					slog.Info("harvest-state-capture", "repo", repoID, "org", currentOrg, "state", r.SovereignState)
+					// Still dispatch task to capture state in manifest
+					task := Task{
+						RepoID:    repoID,
+						RepoName:  repoID,
+						OrgName:   currentOrg,
+						State:     r.SovereignState,
+						Action:    "harvest",
+						Target:    "local",
+						AuthToken: "valid-token-fleet-admin",
+					}
+					cp.Dispatch(task)
+					harvestedCount++ // Counting as "processed"
+					continue
+				}
+
+				// 1. O(1) Local Dedupe Check (Org-wide hash node)
+				if headHash != "" && !dedup.IsNovel(headHash) {
+					slog.Info("hfd-deduplication-hit", "repo", repoID, "hash", headHash, "org", currentOrg)
+					dedup.Record(headHash, simulatedRepoSize) // Track saved bytes
+					continue
+				}
+
+				task := Task{
+					RepoID:    repoID,
+					RepoName:  repoID,
+					OrgName:   currentOrg,
+					State:     r.SovereignState,
+					Action:    "harvest",
+					Target:    "local",
+					AuthToken: "valid-token-fleet-admin",
+				}
+
+				if err := cp.Dispatch(task); err != nil {
+					slog.Error("dispatch-failed", "task", repoID, "err", err)
+					continue
+				}
+
+				if headHash != "" {
+					dedup.Record(headHash, 0)
+				}
+				harvestedCount++
+			}
+
+			// Wait for completions for this organization
+			received := 0
+			for received < harvestedCount {
+				select {
+				case <-cp.Results():
+					received++
+					totalNovelHarvested++
+				case <-time.After(60 * time.Second):
+					slog.Error("harvest-timeout-org", "org", currentOrg)
+					received = harvestedCount // Move to next org
+				}
+			}
+			slog.Info("harvest-organization-complete", "org", currentOrg, "novel_count", harvestedCount, "skipped_empty", skippedCount)
 		}
 
 		duration := time.Since(startTime)
-		metrics := dedup.GetMetrics()
-		
-		slog.Info("harvest-session-complete-hfd", 
-			"total_attempted", 100, 
-			"novel_harvested", harvestedCount, 
+		metrics := make(map[string]interface{})
+		if cp.Destination != nil {
+			metrics = cp.Destination.GetMetrics()
+		}
+
+		slog.Info("harvest-session-complete-hfd",
+			"org_count", len(orgsToHarvest),
+			"novel_harvested", totalNovelHarvested,
 			"duration", duration,
-			"hit_ratio", metrics["hit_ratio"],
-			"bytes_saved_mb", (metrics["bytes_saved"].(uint64)) / (1024 * 1024),
+			"cas_hit_ratio", metrics["cas_hit_ratio"],
+			"logical_gb", float64(metrics["logical_bytes"].(uint64))/(1024*1024*1024),
+			"physical_gb", float64(metrics["physical_bytes"].(uint64))/(1024*1024*1024),
 		)
 
-		generateAssuranceReport(*org, harvestedCount, duration, metrics)
-
+		generateAssuranceReport(*org, totalNovelHarvested, duration, metrics)
 	case "service":
 		slog.Info("firehorse-service-start", "port", *port)
 		StartInteractionServer(*port)
@@ -141,14 +274,13 @@ func generateAssuranceReport(org string, total int, duration time.Duration, metr
     SovereigntyTime = %q;
     IntegrityStatus = "VERIFIED";
     Efficiency {
-        HitRatio = %v;
-        BytesSaved = %v;
-        UniqueNodes = %v;
+        CasHitRatio = %v;
+        LogicalBytes = %v;
+        PhysicalBytes = %v;
     }
 }
-`, org, time.Now().Format(time.RFC3339), total, duration.String(), 
-   metrics["hit_ratio"], metrics["bytes_saved"], metrics["unique_nodes"])
-
+`, org, time.Now().Format(time.RFC3339), total, duration.String(),
+    metrics["cas_hit_ratio"], metrics["logical_bytes"], metrics["physical_bytes"])
 	reportPath := fmt.Sprintf("ASSURANCE_HFD_%s.jebnf", time.Now().Format("20060102-150405"))
 	os.WriteFile(reportPath, []byte(report), 0644)
 	fmt.Printf("\n🛡️  High-Frequency Dedupe Assurance Report Generated: %s\n", reportPath)

@@ -1,0 +1,27 @@
+::Olympus::Forge::BuildManifest::v1 {
+    Project = "GitSovereign";
+    Org = "VelociKey";
+    
+    Components [
+        Component "harvester" {
+            Type = "GO_BACKEND";
+            SourcePath = "60000-Information-Storage/610-SmartPipe/900-Execution-Points/harvester";
+            Main = "main.go";
+        },
+        Component "bridge" {
+            Type = "GO_QUIC_BRIDGE";
+            SourcePath = "60000-Information-Storage/610-SmartPipe/900-Execution-Points/bridge";
+            Main = "main.go";
+        },
+        Component "ui" {
+            Type = "FLUTTER_WASM";
+            SourcePath = "50000-Communication-Contracts/511-Interaction-Surface";
+            UseWasmGC = true;
+        }
+    ];
+
+    Deployment {
+        DefaultTarget = "NATIVE";
+        AllowedTargets = [ "NATIVE", "PODMAN", "GCP" ];
+    }
+}

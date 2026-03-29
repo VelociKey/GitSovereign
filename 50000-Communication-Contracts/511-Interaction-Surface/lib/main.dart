@@ -6,7 +6,11 @@ import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 import 'theme/maturity_tier.dart';
 
+@JS()
+external void _noop();
+
 void main() {
+  _noop; // Silence unused import
   // Read query parameter 'tier' for deterministic graduation capture
   final search = web.window.location.search;
   final params = Uri.parse(search).queryParameters;
@@ -231,10 +235,11 @@ class DashboardView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        border: Border.all(color: color.withOpacity(0.5)),  
+        color: color.withValues(alpha: 0.05),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(12),
       ),
+
       child: Column(
         children: [
           Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
@@ -272,9 +277,10 @@ class SovereignTreeView extends StatelessWidget {
           subtitle: Text('Hash: ${repo['hash']}', style: TextStyle(color: colorScheme.onSurfaceVariant)),
           trailing: Chip(
             label: Text(repo['status']!, style: TextStyle(color: _getStatusColor(repo['status']!, colorScheme))),
-            backgroundColor: _getStatusColor(repo['status']!, colorScheme).withOpacity(0.1),
-            side: BorderSide(color: _getStatusColor(repo['status']!, colorScheme).withOpacity(0.5)),
+            backgroundColor: _getStatusColor(repo['status']!, colorScheme).withValues(alpha: 0.1),
+            side: BorderSide(color: _getStatusColor(repo['status']!, colorScheme).withValues(alpha: 0.5)),    
           ),
+
         );
       },
     );
@@ -363,7 +369,7 @@ class SineWavePainter extends CustomPainter {
     }
 
     final glowPaint = Paint()
-      ..color = glowColor.withOpacity(0.5)
+      ..color = glowColor.withValues(alpha: 0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 10.0
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);

@@ -1,22 +1,37 @@
 package main
 
 import (
-	"context"
-	"testing"
-	"time"
+        "context"
+        "io"
+        "testing"
+        "time"
 )
 
+type MockSource struct{}
+
+func (m *MockSource) StreamRepository(repo string, w io.Writer) (int64, error) {
+        time.Sleep(10 * time.Millisecond)
+        data := []byte("mock repository data")
+        _, err := w.Write(data)
+        return int64(len(data)), err
+}
+
+func (m *MockSource) FetchComponent(repo, component string) ([]ComponentFile, error) {
+        return []ComponentFile{{ID: "mock_file", Data: []byte("mock component data")}}, nil
+}
+
 func TestControlPlane_BPS_Telemetry(t *testing.T) {
-	ctx := context.Background()
-	cp := NewControlPlane(ctx, 2, nil)
-	defer cp.Shutdown()
+        ctx := context.Background()
+        cp := NewControlPlane(ctx, 2, nil)
+        cp.Source = &MockSource{}
+        defer cp.Shutdown()
 
-	task := Task{
-		RepoID:   "telemetry-test",
-		RepoName: "GitSovereign",
-		Action:   "harvest",
-	}
-
+        task := Task{
+                RepoID:   "telemetry-test",
+                RepoName: "GitSovereign",
+                Action:   "harvest",
+                State:    "ACTIVE",
+        }
 	err := cp.Dispatch(task)
 	if err != nil {
 		t.Fatalf("Failed to dispatch task: %v", err)
