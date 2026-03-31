@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
     name = "harvester_lib",
@@ -6,8 +6,13 @@ go_library(
     importpath = "olympus.fleet/60PROX/GitSovereign/60000-Information-Storage/610-SmartPipe/900-Execution-Points/harvester",
     visibility = ["//visibility:public"],
     deps = [
-        "//01100-Sovereign-Alpha/110-Hashing-Vault/90200-Logic-Libraries/110-gitsov-key:gitsov-key",
-        "//01100-Sovereign-Alpha/110-Hashing-Vault/90200-Logic-Libraries/120-adph:adph",
-        "//60PROX/GitSovereign/60000-Information-Storage/610-SmartPipe/900-Execution-Points/bridge:bridge_lib",
+        "//60PROX/GitSovereign/00000-Knowledge-Foundations/110-Hashing-Vault/90200-Logic-Libraries/110-gitsov-key:gitsov-key",
+        "//60PROX/GitSovereign/00000-Knowledge-Foundations/110-Hashing-Vault/90200-Logic-Libraries/120-adph:adph",
     ],
+)
+
+go_binary(
+    name = "harvester",
+    embed = [":harvester_lib"],
+    visibility = ["//visibility:public"],
 )

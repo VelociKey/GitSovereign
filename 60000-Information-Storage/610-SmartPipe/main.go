@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -22,13 +25,63 @@ type SyncRegistry struct {
 }
 
 func LoadSyncRegistry() *SyncRegistry {
-	return &SyncRegistry{
-		DefaultFrequency: "WEEKLY",
-		Schedules: []SyncSchedule{
-			{Target: "VelociKey", Frequency: "DAILY"},
-			{Target: "The-North-Potomac-Initiative/Blueprint", Frequency: "DAILY"},
-		},
+	reg := &SyncRegistry{DefaultFrequency: "WEEKLY"}
+
+	root := "c:\\aAntigravitySpace"
+	if envRoot := os.Getenv("ANTIGRAVITY_ROOT"); envRoot != "" {
+		root = envRoot
 	}
+	path := filepath.Join(root, "60PROX", "GitSovereign", "C0100-Configuration-Registry", "sync_registry.jebnf")
+
+	file, err := os.Open(path)
+	if err != nil {
+		slog.Warn("sync-registry-not-found", "path", path, "using_defaults", true)
+		return reg
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "::") {
+			continue
+		}
+
+		if strings.HasPrefix(line, "DefaultFrequency") {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				reg.DefaultFrequency = strings.Trim(strings.TrimSpace(parts[1]), "\";")
+			}
+		}
+		if strings.Contains(line, "Target =") && strings.Contains(line, "Frequency =") {
+			target := extractValue(line, "Target =")
+			freq := extractValue(line, "Frequency =")
+			if target != "" && freq != "" {
+				reg.Schedules = append(reg.Schedules, SyncSchedule{Target: target, Frequency: freq})
+			}
+		}
+	}
+
+	slog.Info("sync-registry-loaded", "path", path, "schedules", len(reg.Schedules))
+	return reg
+}
+
+func extractValue(line, key string) string {
+	idx := strings.Index(line, key)
+	if idx == -1 {
+		return ""
+	}
+	sub := line[idx+len(key):]
+	sub = strings.TrimSpace(sub)
+	if strings.HasPrefix(sub, "\"") {
+		sub = sub[1:]
+		end := strings.Index(sub, "\"")
+		if end != -1 {
+			return sub[:end]
+		}
+	}
+	// Also handle unquoted if needed, but jeBNF standard is quoted strings for these fields
+	return ""
 }
 
 func IsSyncDue(ctx context.Context, target StorageTarget, reg *SyncRegistry, org, repo string) bool {
@@ -67,6 +120,7 @@ func main() {
 	workers := flag.Int("parallelism", 4, "Number of parallel Firehorse workers")
 	workstation := flag.String("workstation", "http://localhost:8080", "Corporate workstation URL")
 	port := flag.String("port", "8080", "Port for the Interaction Surface")
+	dryRun := flag.Bool("dry-run", false, "Run full pipeline but skip all writes to Google Drive")
 	flag.Parse()
 
 	// 3. Initialize Foundations
@@ -83,9 +137,22 @@ func main() {
 	identity := NewIdentityService(*workstation)
 	cp := NewControlPlane(ctx, *workers, identity)
 	
-	// Pulse 6: Set real CAS storage destination
-	gdriveFolder := "1cajjaUMTzSRZn0__GjsFGcgqr20le4-B"
-	cp.Destination = NewGoogleDriveCAS(gdriveFolder)
+	// Pulse 6: Set CAS storage destination
+	if *dryRun {
+		cp.Destination = NewDryRunCAS()
+		slog.Info("dry-run-mode", "writes", "DISABLED", "pipeline", "FULL")
+	} else {
+		gdriveFolder := "1cajjaUMTzSRZn0__GjsFGcgqr20le4-B"
+		cp.Destination = NewGoogleDriveCAS(gdriveFolder)
+
+		// Authorization Gate: Verify Drive access before any harvesting
+		if err := cp.Destination.(*GoogleDriveCAS).VerifyAccess(ctx); err != nil {
+			slog.Error("authorization-gate-failed", "err", err)
+			fmt.Fprintf(os.Stderr, "\n❌ %v\n", err)
+			os.Exit(1)
+		}
+		slog.Info("authorization-gate-passed")
+	}
 	
 	defer cp.Shutdown()
 	
@@ -252,8 +319,7 @@ func main() {
 			"novel_harvested", totalNovelHarvested,
 			"duration", duration,
 			"cas_hit_ratio", metrics["cas_hit_ratio"],
-			"logical_gb", float64(metrics["logical_bytes"].(uint64))/(1024*1024*1024),
-			"physical_gb", float64(metrics["physical_bytes"].(uint64))/(1024*1024*1024),
+			"dry_run", *dryRun,
 		)
 
 		generateAssuranceReport(*org, totalNovelHarvested, duration, metrics)

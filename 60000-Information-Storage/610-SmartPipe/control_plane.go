@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"sync"
 	"time"
+
+	"olympus.fleet/00SDLC/OlympusLogicLibrary/60000-Information-Storage/90200-Logic-Libraries/110-gitsov-key"
 )
 
 // Task represents a single repository harvest or rehydrate operation.
@@ -34,6 +36,7 @@ type Result struct {
 type Source interface {
         StreamRepository(repo string, w io.Writer) (int64, error)
         FetchComponent(repo, component string) ([]ComponentFile, error)
+        StreamMerkleIngestion(ctx context.Context, repo string, cas interface{}) ([]ManifestEntry, int64, error)
 }
 
 // ControlPlane manages the parallelism and density of Firehorse operations.
@@ -205,49 +208,18 @@ func (cp *ControlPlane) executeExfiltration(task Task) (int64, error) {
 
         var totalBytes int64
 
-	components := []string{"code", "issues", "wiki"}
+	components := []string{"code", "issues", "pull_requests", "releases", "discussions", "metadata", "wiki"}
 	manifestCategories := make(map[string][]ManifestEntry)
 
 	// If repository is not ACTIVE, we skip component harvesting but still create manifest
 	if task.State == "ACTIVE" {
 		for _, comp := range components {
 			if comp == "code" {
-				// Streaming Code Chunker
-				var entries []ManifestEntry
-				pr, pw := io.Pipe()
-				
-				// Start streaming from GitHub in background
-				go func() {
-				        _, err := cp.Source.StreamRepository(task.RepoID, pw)
-				        pw.CloseWithError(err)
-				}()
-				// Process stream in 1MB chunks
-				buf := make([]byte, 1024*1024)
-				for {
-					n, err := io.ReadFull(pr, buf)
-					if n > 0 {
-						chunkData := make([]byte, n)
-						copy(chunkData, buf[:n])
-						totalBytes += int64(n)
-						
-						h := sha256.Sum256(chunkData)
-						hashStr := "sha256:" + hex.EncodeToString(h[:])
-						
-						if cp.Destination != nil {
-							cp.Destination.RecordLogicalBytes(uint64(n))
-							exists, _ := cp.Destination.BlobExists(cp.ctx, hashStr)
-							if !exists {
-								cp.Destination.PutBlob(cp.ctx, hashStr, chunkData)
-							}
-						}
-						entries = append(entries, ManifestEntry{ID: fmt.Sprintf("chunk_%d", len(entries)), Hash: hashStr})
-					}
-					if err != nil {
-						if err == io.EOF || err == io.ErrUnexpectedEOF { break }
-						slog.Error("code-stream-chunk-failed", "repo", task.RepoID, "err", err)
-						break
-					}
+				entries, bytes, err := cp.Source.StreamMerkleIngestion(cp.ctx, task.RepoID, cp.Destination)
+				if err != nil {
+					slog.Error("merkle-ingestion-failed", "repo", task.RepoID, "err", err)
 				}
+				totalBytes += bytes
 				manifestCategories[comp] = entries
 			} else {
 			        // Other components (issues, wiki)
@@ -264,16 +236,17 @@ func (cp *ControlPlane) executeExfiltration(task Task) (int64, error) {
 					totalBytes += int64(len(data))
 
 					h := sha256.Sum256(data)
-					hashStr := "sha256:" + hex.EncodeToString(h[:])
+					key, _ := gitsovkey.FromSHA256Bytes(h[:])
+					targetKey := key.Hex()
 					
 					if cp.Destination != nil {
 						cp.Destination.RecordLogicalBytes(uint64(len(data)))
-						exists, _ := cp.Destination.BlobExists(cp.ctx, hashStr)
+						exists, _ := cp.Destination.BlobExists(cp.ctx, targetKey)
 						if !exists {
-							cp.Destination.PutBlob(cp.ctx, hashStr, data)
+							cp.Destination.PutBlob(cp.ctx, targetKey, data)
 						}
 					}
-					entries = append(entries, ManifestEntry{ID: f.ID, Hash: hashStr})
+					entries = append(entries, ManifestEntry{ID: f.ID, Hash: targetKey})
 				}
 				manifestCategories[comp] = entries
 			}

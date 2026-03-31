@@ -11,8 +11,8 @@ import (
 	"time"
 	"log"
 
-	"olympus.fleet/01100-Sovereign-Alpha/110-Hashing-Vault/90200-Logic-Libraries/110-gitsov-key"
-	"olympus.fleet/01100-Sovereign-Alpha/110-Hashing-Vault/90200-Logic-Libraries/120-adph"
+	"olympus.fleet/00SDLC/OlympusLogicLibrary/60000-Information-Storage/90200-Logic-Libraries/110-gitsov-key"
+	"olympus.fleet/00SDLC/OlympusLogicLibrary/60000-Information-Storage/90200-Logic-Libraries/120-adph"
 	"olympus.fleet/60PROX/GitSovereign/610-SmartPipe/900-Execution-Points/bridge"
 )
 

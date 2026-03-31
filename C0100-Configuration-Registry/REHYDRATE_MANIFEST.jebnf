@@ -1,0 +1,10 @@
+# Sovereign Fleet Dagger Build Manifest
+# Domain: C0100-Configuration-Registry
+
+LocalBuilds = [
+  "olympus.fleet/00SDLC/OlympusConductor/10000-Autonomous-Actors/110-devpm-relay",
+  "olympus.fleet/00SDLC/OlympusConductor/30100-Execution-Points/110-conductor-project",
+  "olympus.fleet/00SDLC/OlympusConductor/30100-Execution-Points/120-conductor-cycle",
+  "olympus.fleet/00SDLC/OlympusConductor/30100-Execution-Points/150-gemaid-harden",
+  "olympus.fleet/60PROX/GitSovereign/60000-Information-Storage/610-SmartPipe/900-Execution-Points/harvester",
+];

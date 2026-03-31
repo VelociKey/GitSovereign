@@ -2,19 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
 // WASM-GC Compliance
-import 'dart:js_interop'; 
-import 'package:web/web.dart' as web;
+import 'web_utils.dart';
 import 'theme/maturity_tier.dart';
 
-@JS()
-external void _noop();
-
 void main() {
-  _noop; // Silence unused import
-  // Read query parameter 'tier' for deterministic graduation capture
-  final search = web.window.location.search;
-  final params = Uri.parse(search).queryParameters;
-  final tierParam = params['tier']?.toLowerCase();
+  initWeb();
+  
+  final tierParam = getQueryTier();
   
   MaturityTier initialTier = MaturityTier.solo;
   if (tierParam == 'team') initialTier = MaturityTier.team;
