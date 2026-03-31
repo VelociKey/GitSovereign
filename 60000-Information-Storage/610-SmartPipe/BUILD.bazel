@@ -21,6 +21,9 @@ go_library(
     deps = [
         "//00SDLC/Olympus2/C0990-Ephemeral-Scratch/bazel-root/75zooped/external/gazelle++go_deps+com_github_quic_go_quic_go:quic-go",
         "//00SDLC/Olympus2/C0990-Ephemeral-Scratch/bazel-root/75zooped/external/gazelle++go_deps+org_golang_x_oauth2:oauth2",
+        "//60PROX/GitSovereign/00000-Knowledge-Foundations/110-Hashing-Vault/90200-Logic-Libraries/110-gitsov-key:gitsov-key",
+        "//60PROX/GitSovereign/00000-Knowledge-Foundations/110-Hashing-Vault/90200-Logic-Libraries/120-adph:adph",
+        "@com_github_quic_go_quic_go//http3",
         "@org_golang_google_api//drive/v3:drive",
         "@org_golang_google_api//option",
     ],
