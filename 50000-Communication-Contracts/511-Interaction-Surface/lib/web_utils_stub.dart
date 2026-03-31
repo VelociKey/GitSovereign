@@ -1,0 +1,2 @@
+String getQueryTier() => '';
+void initWeb() {}

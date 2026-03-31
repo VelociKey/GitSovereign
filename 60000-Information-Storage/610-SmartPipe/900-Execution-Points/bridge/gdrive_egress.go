@@ -1,13 +1,17 @@
 package bridge
 
 import (
-        "context"
-        "fmt"
-        "net/http"
-        "os"
-        "os/exec"
-        "path/filepath"
-        "strings"
+	"bytes"
+	"context"
+	"fmt"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"sync/atomic"
+	"time"
+
 	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/drive/v3"
@@ -63,11 +67,18 @@ func fetchSovereignToken() (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-func exchangeForGCP(ctx context.Context, token string) (string, error) {
-	fmt.Println("🛡️ Identity Pulse: Exchanging Token for Ephemeral GCP Access Token [WIF]...")
-	// For this benchmark pulse, we expect the environment to have a valid session.
-	// In the real world, this pulse would perform the STS exchange using the gh token.
-	return "YA29.A0A...", nil 
+func exchangeForGCP(ctx context.Context, ghToken string) (string, error) {
+	fmt.Println("🛡️ Identity Pulse: Exchanging Token for Ephemeral GCP Access Token...")
+	// Use gcloud to obtain a real GCP access token
+	out, err := exec.Command("gcloud", "auth", "print-access-token").Output()
+	if err != nil {
+		return "", fmt.Errorf("gcloud-token-failed (ensure 'gcloud auth login' has been run): %w", err)
+	}
+	token := strings.TrimSpace(string(out))
+	if token == "" {
+		return "", fmt.Errorf("gcloud returned empty token")
+	}
+	return token, nil
 }
 
 type staticTokenSource struct{ AccessTokenString string }
@@ -75,8 +86,21 @@ func (s *staticTokenSource) Token() (*oauth2.Token, error) {
 	return &oauth2.Token{AccessToken: s.AccessTokenString}, nil
 }
 
+var chunkCounter uint64
+
 func (e *GDriveRealEgress) Write(p []byte) (n int, err error) {
-	fmt.Printf("📤 GWS Pipe: Streaming %d bytes to Cloud Target...\n", len(p))
+	seq := atomic.AddUint64(&chunkCounter, 1)
+	chunkName := fmt.Sprintf("chunk_%d_%d.bin", time.Now().Unix(), seq)
+
+	file := &drive.File{
+		Name:    chunkName,
+		Parents: []string{e.FolderID},
+	}
+	_, err = e.Service.Files.Create(file).Media(bytes.NewReader(p)).Do()
+	if err != nil {
+		return 0, fmt.Errorf("gdrive-write-failed: %w", err)
+	}
+	fmt.Printf("📤 GWS Pipe: Uploaded %d bytes as %s\n", len(p), chunkName)
 	return len(p), nil
 }
 
