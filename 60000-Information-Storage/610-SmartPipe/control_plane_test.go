@@ -20,6 +20,10 @@ func (m *MockSource) FetchComponent(repo, component string) ([]ComponentFile, er
         return []ComponentFile{{ID: "mock_file", Data: []byte("mock component data")}}, nil
 }
 
+func (m *MockSource) StreamMerkleIngestion(ctx context.Context, repo string, cas interface{}) ([]ManifestEntry, int64, error) {
+	return nil, 0, nil
+}
+
 func TestControlPlane_BPS_Telemetry(t *testing.T) {
         ctx := context.Background()
         cp := NewControlPlane(ctx, 2, nil)

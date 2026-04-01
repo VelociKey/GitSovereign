@@ -6,27 +6,6 @@ import (
 	"time"
 )
 
-type MockStorage struct {
-	LastSync time.Time
-}
-
-func (m *MockStorage) PutBlob(ctx context.Context, hash string, data []byte) error { return nil }
-func (m *MockStorage) BlobExists(ctx context.Context, hash string) (bool, error)  { return false, nil }
-func (m *MockStorage) RecordLogicalBytes(size uint64)                             {}
-func (m *MockStorage) GetMetrics() map[string]interface{}                         { return nil }
-func (m *MockStorage) UpdateRootManifest(ctx context.Context, orgs []string) error { return nil }
-func (m *MockStorage) UpdateOrgManifest(ctx context.Context, org string, repos []string) error {
-	return nil
-}
-func (m *MockStorage) UpdateRepoManifest(ctx context.Context, org, repo, state string, categories map[string][]ManifestEntry) error {
-	return nil
-}
-func (m *MockStorage) GetManifestMetadata(ctx context.Context, org, repo string) (time.Time, error) {
-	if m.LastSync.IsZero() {
-		return time.Time{}, fmt.Errorf("manifest-not-found")
-	}
-	return m.LastSync, nil
-}
 
 func TestIsSyncDue(t *testing.T) {
 	ctx := context.Background()

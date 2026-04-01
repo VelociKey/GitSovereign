@@ -2,20 +2,20 @@ module olympus.fleet/60PROX/GitSovereign/610-SmartPipe
 
 go 1.26.0
 
-replace (
-        connectrpc.com/connect => ../../../../../00SDLC/OlympusForge/81200-Logic-Libraries/connectrpc/connect-go-1.18.1
-        github.com/quic-go/quic-go => ../../../../../00SDLC/OlympusForge/81200-Logic-Libraries/quic-go/quic-go-0.50.0
-        olympus.fleet/00SDLC/OlympusLogicLibrary => ../../../../../00SDLC/OlympusLogicLibrary
-)
+
 require (
 	github.com/quic-go/quic-go v0.0.0-00010101000000-000000000000
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/api v0.273.0
+	lukechampine.com/blake3 v0.0.0-00010101000000-000000000000
 	olympus.fleet/00SDLC/OlympusLogicLibrary v0.0.0
-)
+	olympus.fleet/00SDLC/OlympusLogicLibrary/60000-Information-Storage/90200-Logic-Libraries/110-gitsov-key v0.0.0
+	olympus.fleet/00SDLC/OlympusLogicLibrary/60000-Information-Storage/90200-Logic-Libraries/120-gitsov-notary v0.0.0
+	)
 
-require (
+	require (
 	cloud.google.com/go/auth v0.18.2 // indirect
+
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

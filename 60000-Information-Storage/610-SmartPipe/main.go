@@ -117,7 +117,9 @@ func main() {
 	// 2. Parse Parameters
 	mode := flag.String("mode", "service", "Operation mode: service, scan, or harvest")
 	org := flag.String("org", "", "GitHub Organization to scan/harvest")
+	repo := flag.String("repo", "", "Specific GitHub repository to harvest")
 	workers := flag.Int("parallelism", 4, "Number of parallel Firehorse workers")
+
 	workstation := flag.String("workstation", "http://localhost:8080", "Corporate workstation URL")
 	port := flag.String("port", "8080", "Port for the Interaction Surface")
 	dryRun := flag.Bool("dry-run", false, "Run full pipeline but skip all writes to Google Drive")
@@ -239,10 +241,16 @@ func main() {
 			simulatedRepoSize := uint64(50 * 1024 * 1024) // 50MB per repo
 
 			for _, r := range repos {
-				repoID := r.Name
-				headHash := r.HeadHash
+			        repoID := r.Name
+			        headHash := r.HeadHash
 
-				// Pulse 6: Check scheduling
+			        // Targeted repository filter
+			        if *repo != "" && r.Name != *repo {
+			                continue
+			        }
+
+			        // Pulse 6: Check scheduling
+
 				if cp.Destination != nil && !IsSyncDue(ctx, cp.Destination, reg, currentOrg, repoID) {
 					skippedCount++
 					continue
@@ -252,8 +260,9 @@ func main() {
 					slog.Info("harvest-state-capture", "repo", repoID, "org", currentOrg, "state", r.SovereignState)
 					// Still dispatch task to capture state in manifest
 					task := Task{
-						RepoID:    repoID,
-						RepoName:  repoID,
+					        RepoID:    fmt.Sprintf("%s/%s", currentOrg, repoID),
+					        RepoName:  repoID,
+
 						OrgName:   currentOrg,
 						State:     r.SovereignState,
 						Action:    "harvest",
@@ -273,8 +282,9 @@ func main() {
 				}
 
 				task := Task{
-					RepoID:    repoID,
-					RepoName:  repoID,
+				        RepoID:    fmt.Sprintf("%s/%s", currentOrg, repoID),
+				        RepoName:  repoID,
+
 					OrgName:   currentOrg,
 					State:     r.SovereignState,
 					Action:    "harvest",
