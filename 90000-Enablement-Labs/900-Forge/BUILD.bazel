@@ -1,4 +1,4 @@
-# GitSovereign — Central Workspace Harness
+# GitSovereign  Central Workspace Harness
 # Pulse 1: Centralized Process Alignment
 
 load("//00SDLC/OlympusBuilder:defs.bzl", "sovereign_vertical_slice")

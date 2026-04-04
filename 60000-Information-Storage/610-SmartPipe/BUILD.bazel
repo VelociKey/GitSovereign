@@ -26,9 +26,9 @@ go_library(
     deps = [
         "@com_github_quic_go_quic_go//:quic-go",
         "@org_golang_x_oauth2//:oauth2",
-        "//00SDLC/OlympusLogicLibrary/60000-Information-Storage/90200-Logic-Libraries/110-gitsov-key:gitsov-key", 
-        "//00SDLC/OlympusLogicLibrary/60000-Information-Storage/90200-Logic-Libraries/120-gitsov-notary:gitsov-notary",
-        "//00SDLC/OlympusLogicLibrary/60000-Information-Storage/90200-Logic-Libraries/120-adph:adph",
+        "//00SDLC/OlympusLogicLibrary/90200-Logic-Libraries/110-gitsov-key:gitsov-key", 
+        "//00SDLC/OlympusLogicLibrary/90200-Logic-Libraries/120-gitsov-notary:gitsov-notary",
+        "//00SDLC/OlympusLogicLibrary/90200-Logic-Libraries/120-adph:adph",
         "@com_github_lukechampine_blake3//:blake3",
         "@com_github_quic_go_quic_go//http3",
         "@org_golang_google_api//drive/v3:drive",
